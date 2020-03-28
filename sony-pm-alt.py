@@ -1,6 +1,6 @@
 #!/usr/bin/python
-import socket, struct, time, SocketServer, re, subprocess, sys, logging, logging.handlers
-import thread, requests, os
+import socket, struct, time, socketserver, re, subprocess, sys, logging, logging.handlers
+import _thread as thread, requests, os
 from threading import Thread
 from shutil import move
 
@@ -19,7 +19,7 @@ GPHOTO_SETTINGS = "~/.gphoto/settings" #default location gphoto2 uses
 CUSTOM_LD_LIBRARY_PATH = "/usr/local/lib" #common path if self-compiled
 
 #Might want to change:
-PHOTO_DIR = "/var/lib/Sony"  #photo/videos will be downloaded to here
+PHOTO_DIR = "/Users/qwazix/Pictures/RX100"  #photo/videos will be downloaded to here
 PTP_GUID = "ff:ff:52:54:00:b6:fd:a9:ff:ff:52:3c:28:07:a9:3a" #default value for sony-guid-setter
 DEBUG = False
 #------------------------------------------------------------------
@@ -42,7 +42,7 @@ for i,arg in enumerate(sys.argv):
       sys.stdout = open(sys.argv[i+1], 'w')
       sys.stderr = open(sys.argv[i+1], 'w')
     else:
-      print "Please provide path the log file after -l"
+      print("Please provide path the log file after -l")
       thread.interrupt_main()  #exiting program
 
 
@@ -132,7 +132,7 @@ class Responder(Thread):
     try:
       mreq = struct.pack("4sl", socket.inet_aton(BCAST_IP), socket.INADDR_ANY)
       sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
-    except socket.error, msg:
+    except (socket.error, msg):
       L.error("setsockopt error: %s" % msg[1])
       thread.interrupt_main()  #exiting program
 
@@ -145,10 +145,10 @@ class Responder(Thread):
           sock.close()
           return
       else:
-        if "MtpNullService" in data and PROC.poll() is not None:
+        if b'MtpNullService' in data and PROC.poll() is not None:
           L.info("received MtpNullService from {}".format(addr))
           L.debug(" data:\n{}".format(data.strip()))
-          searchObj = re.search( r'LOCATION: (.+\.xml)', data, re.I)
+          searchObj = re.search( r'LOCATION: (.+\.xml)', data.decode(), re.I)
           if searchObj and "://" in searchObj.group(1):
             try:
               r = requests.get(searchObj.group(1), timeout=4)
@@ -156,7 +156,7 @@ class Responder(Thread):
                L.warn("Connection Error")
             else:
               L.debug("Got XML - verify if our camera")
-              if "Sony Corporation" in r.content:
+              if b"Sony Corporation" in r.content:
                 L.debug("Camera Found...starting gphoto")
                 ValidateUpdateSettings(GPHOTO_SETTINGS, addr[0], PTP_GUID)
                 gphoto_cmd = [GPHOTO_CMD,
