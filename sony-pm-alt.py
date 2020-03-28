@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import socket, struct, time, socketserver, re, subprocess, sys, logging, logging.handlers
 import _thread as thread, requests, os
 from threading import Thread
